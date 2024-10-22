@@ -3,7 +3,6 @@ package BOJ;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.StringTokenizer;
 
 public class ans2805 {
@@ -12,27 +11,25 @@ public class ans2805 {
         BufferedReader bf = new BufferedReader(new InputStreamReader(System.in));
         StringTokenizer st = new StringTokenizer(bf.readLine());
         int a = Integer.parseInt(st.nextToken());
-        long b = Long.parseLong(st.nextToken());
+        int b = Integer.parseInt(st.nextToken());
 
-        Long[] arr = new Long[a];
+        int[] arr = new int[a];
+        int start = 0;
+        int end = -1;
         st = new StringTokenizer(bf.readLine());
         for(int i = 0; i < a; i++){
-            arr[i] = Long.parseLong(st.nextToken());
+            arr[i] = Integer.parseInt(st.nextToken());
+            end = Math.max(arr[i], end);
         }
 
-        Arrays.sort(arr);
 
-        long answer = getUpperBound(arr, b);
+        long answer = getUpperBound(start, end, arr, b);
         System.out.println(answer - 1);
     }
 
-    private static long getUpperBound(Long[] arr, long b){
-
-        long start = arr[0];
-        long end = arr[arr.length-1];
-
+    private static long getUpperBound(int start, int end, int[] arr, long b){
         while (start < end) {
-            long mid = (start + end) / 2;
+            int mid = (start + end) / 2;
 
             long sum = 0;
             for(int i = 0; i < arr.length; i++){
