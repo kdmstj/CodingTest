@@ -3,15 +3,19 @@ package BOJ.samsung;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Stack;
+import java.util.StringTokenizer;
 
 public class ans17837 {
 
-    static int N;
-    static int K;
+    static final int MAX_TURN = 1000;
+
+    static int N, K;
     static int[][] color;
     static Stack<Integer>[][] chess;
-    static Node[] node_list;
+    static Node[] nodeList;
     static int[] dx = {0, -1, 0, 1};
     static int[] dy = {1, 0, -1, 0};
 
@@ -23,93 +27,69 @@ public class ans17837 {
         K = Integer.parseInt(st.nextToken());
 
         chess = new Stack[N][N];
-        color = new int[N][N]; // 0:흰, 1:빨, 2: 파
+        color = new int[N][N];
         for (int i = 0; i < N; i++) {
             st = new StringTokenizer(br.readLine());
             for (int j = 0; j < N; j++) {
                 color[i][j] = Integer.parseInt(st.nextToken());
-                chess[i][j] = new Stack<Integer>();
+                chess[i][j] = new Stack<>();
             }
         }
 
-        node_list = new Node[K];
+        nodeList = new Node[K];
         for (int i = 0; i < K; i++) {
             st = new StringTokenizer(br.readLine());
             int x = Integer.parseInt(st.nextToken()) - 1;
             int y = Integer.parseInt(st.nextToken()) - 1;
-            int d = Integer.parseInt(st.nextToken());
+            int d = convertDirection(Integer.parseInt(st.nextToken()));
 
-            if(d == 1){
-                d = 0;
-            } else if(d == 2){
-                d = 2;
-            } else if (d == 3) {
-                d = 1;
-            } else {
-                d = 3;
-            }
-
-            node_list[i] = new Node(x, y, d);
+            nodeList[i] = new Node(x, y, d);
             chess[x][y].add(i);
         }
 
 
+        int turn = playGame();
+        System.out.println(turn);
+    }
 
-        int turn = 0;
-        while (true) {
-
-            //절대로 게임이 종료되지 않는 경우 || 1,000보다 큰 경우
-            if (turn >= 1000) {
-                turn = -1;
-                break;
-            }
-
+    private static int playGame() {
+        for (int turn = 1; turn <= MAX_TURN; turn++) {
             for (int i = 0; i < K; i++) {
-                Node node = node_list[i];
-
-                int x = node.x;
-                int y = node.y;
-                int d = node.d;
-
-                int tempX = x + dx[node.d];
-                int tempY = y + dy[node.d];
-
-                if (isOutOfRange(tempX, tempY) || isBlue(tempX, tempY)) {
-                    int tempD = (d + 2) % 4;
-
-                    tempX = x + dx[tempD];
-                    tempY = y + dy[tempD];
-                    node.d = tempD;
-
-                    if(isOutOfRange(tempX, tempY) || isBlue(tempX, tempY)){
-                        //방향 전환한 것에 대해서도 막혀있을 경우
-                        continue;
-                    }
-                }
-
-
-                if (isWhite(tempX, tempY)) {
-                    //node 위에 있는 말들도 함께 같이 이동한다.
-                    move(i, x, y, tempX, tempY);
-                    if(chess[tempX][tempY].size() >= 4) {
-                        System.out.println(turn + 1);
-                        return;
-                    }
-                } else if (isRed(tempX, tempY)) {
-                    //node 위에 있는 말들도 함께 이동한다. (대신 순서를 바꾼다.)
-                    move_reverse(i, x, y, tempX, tempY);
-                    if(chess[tempX][tempY].size() >= 4) {
-                        System.out.println(turn + 1);
-                        return;
-                    }
+                if (movePiece(i)) {
+                    return turn;
                 }
             }
+        }
+        return -1;
+    }
 
+    private static boolean movePiece(int pieceIdx) {
+        Node node = nodeList[pieceIdx];
 
-            turn++;
+        int x = node.x, y = node.y, d = node.d;
+
+        int nX = x + dx[node.d];
+        int nY = y + dy[node.d];
+
+        if (isOutOfRange(nX, nY) || isBlue(nX, nY)) {
+
+            node.reverseDirection();
+            nX = x + dx[node.d];
+            nY = y + dy[node.d];
+
+            if (isOutOfRange(nX, nY) || isBlue(nX, nY)) {
+                return false; //이동하지 않음.
+            }
         }
 
-        System.out.println(turn);
+
+        if (isWhite(nX, nY)) {
+            move(pieceIdx, x, y, nX, nY);
+        } else if (isRed(nX, nY)) {
+            move_reverse(pieceIdx, x, y, nX, nY);
+        }
+
+        return chess[nX][nY].size() >= 4;
     }
 
     private static void move_reverse(int i, int x, int y, int tempX, int tempY) {
@@ -123,8 +103,8 @@ public class ans17837 {
         while (!temp_queue.isEmpty()) {
             int num = temp_queue.poll();
             chess[tempX][tempY].add(num);
-            node_list[num].x = tempX;
-            node_list[num].y = tempY;
+            nodeList[num].x = tempX;
+            nodeList[num].y = tempY;
         }
     }
 
@@ -139,8 +119,8 @@ public class ans17837 {
         while (!temp_stack.isEmpty()) {
             int num = temp_stack.pop();
             chess[tempX][tempY].add(num);
-            node_list[num].x = tempX;
-            node_list[num].y = tempY;
+            nodeList[num].x = tempX;
+            nodeList[num].y = tempY;
         }
     }
 
@@ -160,6 +140,18 @@ public class ans17837 {
         return tempX < 0 || tempY < 0 || tempX >= N || tempY >= N;
     }
 
+    private static int convertDirection(int d) {
+        if(d == 1){
+            d = 0;
+        } else if(d == 3){
+            d = 1;
+        } else if(d == 4){
+            d = 3;
+        }
+
+        return d;
+    }
+
     static class Node {
         private int x;
         private int y;
@@ -169,6 +161,10 @@ public class ans17837 {
             this.x = x;
             this.y = y;
             this.d = d;
+        }
+
+        void reverseDirection() {
+            this.d = (this.d + 2) % 4;
         }
     }
 }
